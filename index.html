@@ -24,14 +24,18 @@
       background: rgba(20, 24, 22, 0.72);
       color: #f2f5f0;
       font: 15px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
-      white-space: nowrap;
+      width: max-content;
+      max-width: calc(100vw - 32px);
+      box-sizing: border-box;
+      text-align: center;
       transition: opacity 0.3s ease;
     }
     #hint.hidden { opacity: 0; }
+    #hint.error { background: #8a1f1f; color: #fff; border-radius: 14px; }
   </style>
 </head>
 <body>
-  <div id="hint">Point your camera at the photo</div>
+  <div id="hint">Starting camera…</div>
 
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no"
@@ -54,15 +58,55 @@
         Height = photo height ÷ photo width.
         Landscape 4:3 → 0.75 · Portrait 3:4 → 1.333 · Square → 1
       -->
-      <a-plane src="#newPicture" position="0 0 0" width="1" height="1.333"></a-plane>
+      <a-plane src="#newPicture" position="0 0 0" width="1" height="0.75"></a-plane>
     </a-entity>
   </a-scene>
 
   <script>
     const hint = document.getElementById('hint');
+    const scene = document.querySelector('a-scene');
     const target = document.getElementById('target');
-    target.addEventListener('targetFound', () => hint.classList.add('hidden'));
-    target.addEventListener('targetLost', () => hint.classList.remove('hidden'));
+    let hasError = false;
+
+    function show(msg, isError) {
+      if (hasError && !isError) return;       // keep the first error on screen
+      hasError = hasError || isError;
+      hint.textContent = msg;
+      hint.classList.remove('hidden');
+      hint.classList.toggle('error', !!isError);
+    }
+
+    // 1. Did A-Frame and MindAR load from the CDN?
+    if (!window.AFRAME) {
+      show("The AR scripts didn't load. Check your internet connection and reload.", true);
+    }
+
+    // 2. Is the page on https:// ? The camera is blocked otherwise.
+    if (!window.isSecureContext) {
+      show('This page needs an https:// address to use the camera. Open your github.io link instead.', true);
+    } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      show("This browser can't open the camera here. Open the link directly in Safari or Chrome.", true);
+    }
+
+    // 3. Are targets.mind and new-picture.jpg next to index.html?
+    async function checkFile(path) {
+      try {
+        const res = await fetch(path, { method: 'HEAD', cache: 'no-store' });
+        if (!res.ok) show(`Can't find ${path.slice(2)}. Check the file name (it's case-sensitive) and that it sits next to index.html.`, true);
+      } catch (e) {
+        show(`Can't load ${path.slice(2)}. Open this page from a web address, not a saved file.`, true);
+      }
+    }
+    checkFile('./targets.mind');
+    checkFile('./new-picture.jpg');
+
+    // 4. Camera and tracking status from MindAR
+    scene.addEventListener('arReady', () => show('Point your camera at the photo'));
+    scene.addEventListener('arError', () =>
+      show("The camera didn't start. In iPhone Settings, open Chrome and turn Camera on, then reload.", true));
+
+    target.addEventListener('targetFound', () => { if (!hasError) hint.classList.add('hidden'); });
+    target.addEventListener('targetLost', () => { if (!hasError) hint.classList.remove('hidden'); });
   </script>
 </body>
 </html>
