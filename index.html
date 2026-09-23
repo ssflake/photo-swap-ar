@@ -6,7 +6,7 @@
   <title>Photo swap AR</title>
 
   <!-- A-Frame + MindAR (image tracking). Versions pinned for compatibility. -->
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
@@ -78,7 +78,9 @@
 
     // 1. Did A-Frame and MindAR load from the CDN?
     if (!window.AFRAME) {
-      show("The AR scripts didn't load. Check your internet connection and reload.", true);
+      show("A-Frame didn't load. Check your internet connection and reload.", true);
+    } else if (!window.MINDAR) {
+      show("MindAR didn't load. Check your internet connection and reload.", true);
     }
 
     // 2. Is the page on https:// ? The camera is blocked otherwise.
