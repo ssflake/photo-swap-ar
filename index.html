@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Photo swap AR</title>
+
+  <!-- A-Frame + MindAR (image tracking). Versions pinned for compatibility. -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+
+    /* Small hint that disappears once the photo is recognized */
+    #hint {
+      position: fixed;
+      left: 50%;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%);
+      z-index: 10;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(20, 24, 22, 0.72);
+      color: #f2f5f0;
+      font: 15px/1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
+      white-space: nowrap;
+      transition: opacity 0.3s ease;
+    }
+    #hint.hidden { opacity: 0; }
+  </style>
+</head>
+<body>
+  <div id="hint">Point your camera at the photo</div>
+
+  <a-scene
+    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no"
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-assets>
+      <!-- The picture that appears on top of your real photo -->
+      <img id="newPicture" src="./new-picture.jpg" crossorigin="anonymous" />
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- targetIndex 0 = the first image you compiled into targets.mind -->
+    <a-entity id="target" mindar-image-target="targetIndex: 0">
+      <!--
+        Width 1 = the full width of your real photo.
+        Height = photo height ÷ photo width.
+        Landscape 4:3 → 0.75 · Portrait 3:4 → 1.333 · Square → 1
+      -->
+      <a-plane src="#newPicture" position="0 0 0" width="1" height="1.333"></a-plane>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const hint = document.getElementById('hint');
+    const target = document.getElementById('target');
+    target.addEventListener('targetFound', () => hint.classList.add('hidden'));
+    target.addEventListener('targetLost', () => hint.classList.remove('hidden'));
+  </script>
+</body>
+</html>
